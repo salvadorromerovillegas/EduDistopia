@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/popups/ask.css">
+  </head>
+  <body>
+    <script src="/js/jquery-3.6.0.min.js"></script>    
+    <p>Mejora la presentación de la rúbrica de corrección para corregirla más fácilmente.
+      <br>      
+    <button id="setStyle">Mejorar presentación rúbrica</button>
+    </p>
+    <p>
+    Genera un Feedback para alumnado usando la información de la rúbrica, de forma
+    que el alumnado pueda leer el feedback más fácilmente. Deben estar marcados todos
+    los elementos de la rúbrica.
+    <br>
+    <button id="generarFeedback">Generar Feedback</button>
+    </p>
+    <p>
+      Calcula la nota promedio de los CE (solo si en todos los CE se ha indicado una nota).
+      <br>
+      <button id="promCEs">Calcular la nota promedio de los CEs</button>
+    </p>
+    <p>
+    Copia la nota obtenida con la rúbrica a todos los CEs (solo si consideras que
+    todos los CEs deberían de tener dicha nota)
+    <br>
+    <button id="procesar1">Procesar CEs copy</button>
+    </p>
+    <p>
+    Distribuye la nota de los CR en los CE de forma homógenea (no saldrá la misma media salvo que haya un CE por CR, sino tendría que haber notas de CE superiores a 10 en muchos casos)
+    <br>
+    <button id="procesar2">Procesar CEs distribute</button>
+    </p>
+    <p style="text-align: right;">(c) 2021 Salvador Romero Villegas<br>
+    Librerías usadas: jQuery 3.6.0 (licencia MIT)
+    </p>
+    <script src="/js/ask.js"></script>    
+</body>
+</html>

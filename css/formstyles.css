@@ -1,0 +1,46 @@
+table.criteria tr.criterion td.remark {
+    display:block;
+    float: left;
+    line-height: 22px;
+    width: 100%;
+  }
+  
+  table.criteria tr.criterion td.description {
+    display:block;
+    width: 100% !important;
+    font-size: large;
+    font-weight: bolder !important;
+    line-height: 22px;
+    background-color: lightgray;
+    margin-bottom: 5px;
+    margin-top:5px;
+  }
+  
+  table.criteria tr.criterion td.levels {
+    display:block;
+    width: 100% !important;
+  }
+  
+  table.criteria tr.criterion td.levels table {
+    width: 95% !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  table.criteria tr.criterion .levels .level {  
+    border: 1px solid darkgray;  
+  }
+  
+  table.criteria tr.criterion .levels .level:last-of-type {  
+    border: 1px solid darkgray;  
+  }
+  
+  table.criteria tr.criterion .remark 
+  {
+    text-align: center;
+  }
+  
+  table.criteria tr.criterion .remark textarea {
+    width: 95%;  
+    min-height: 180px;  
+  }

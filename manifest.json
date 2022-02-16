@@ -1,0 +1,45 @@
+{
+    "name": "EduDistopía",
+    "description": "FP a Distancia Andalucía Extensión Navegador para Docentes",
+    "version": "1.0",
+    "manifest_version": 3,
+    "background":
+    {
+        "service_worker":"js/background.js"
+    },
+    "permissions": ["storage","activeTab","scripting","tabs"],
+    "action": {
+        "default_title": "Haz clic aquí para ver el cajón de utilidades",
+        "default_popup": "/popups/ask.html",
+        "default_icon": {
+            "16": "/images/get_started16.png",
+            "32": "/images/get_started32.png",
+            "48": "/images/get_started48.png",
+            "128": "/images/get_started128.png"
+          }
+      
+    },
+    "icons": {
+        "16": "/images/get_started16.png",
+        "32": "/images/get_started32.png",
+        "48": "/images/get_started48.png",
+        "128": "/images/get_started128.png"
+      },
+      "web_accessible_resources": [
+        {
+            "resources": [
+                "/css/*.css",
+                "/htmlfragments/*.html",
+                "/js/injectable.js",
+                "/js/jquery-*.js",
+                "/js/promedioCEs.js",
+                "/js/calcularCEsMod.js",
+                "/js/generarFeedbackMod.js",
+                "/js/modules/*"
+            ],
+            "matches":["https://*.juntadeandalucia.es/*"]
+        }
+      ]      
+      ,
+      "host_permissions": ["https://*.juntadeandalucia.es/*"]
+  }
