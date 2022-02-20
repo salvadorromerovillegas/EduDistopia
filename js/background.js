@@ -9,6 +9,7 @@ function injectWebWidgets() {
   const src = chrome.runtime.getURL('/js/injectable.js');
   import(src).then((m) => { 
     m.inject();
+    m.injectRAPump();
   });
 }
 
