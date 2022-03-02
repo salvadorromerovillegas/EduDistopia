@@ -42,8 +42,8 @@ export function calcularNotasCEyCR () {
     }
     else {
         //Calculamos na nota según criterios de rúbrica
-        let grade = CRs.calculateGrade();
-        msg.push('La nota media según criterios de rúbrica es ' + Math.round(grade * 100) / 100);
+        msg.push('La nota media según criterios de rúbrica es ' + Math.round(CRs.gradeBasedOnCRs * 100) / 100);
+        
     }
 
     console.log(msg.join('\n'));

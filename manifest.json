@@ -1,7 +1,8 @@
 {
-    "name": "EduDistopía",
+    "name": "EduDistopía",    
     "description": "FP a Distancia Andalucía Extensión Navegador para Docentes",
-    "version": "1.0",
+    "version": "1.0.1",
+    "author": "Salvador Romero Villegas",
     "manifest_version": 3,
     "background":
     {

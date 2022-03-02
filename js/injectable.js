@@ -1,27 +1,62 @@
 
-import { whenAvaliable, collectForm, fillForm, genRandomID } from '/js/modules/u.js';
 import '/js/jquery-3.6.0.min.js';
+
+import { whenAvaliable, whenNotAvaliable } from './modules/dyn.js';
+import { collectForm, fillForm, genRandomID, getUserInfo} from '/js/modules/u.js';
 import { roundGrade } from './modules/ext.js';
 import { renderFeedback } from '/js/generarFeedbackMod.js';
 
 let rID = genRandomID();
 
+/**
+ * Inyecta el toolbar para las operaciones de guardar y rescatar
+ */
 export function inject() {
 
-    let randomId = 'FPADEX_ie93odo312933_123kfiikaDKFNA_222';
+    let randomId = 'FPADEX_TOOLBAR_'+rID;
     if ($('#' + randomId).length == 0) {
         $('body').append("<div id='" + randomId + "'></div>");
         $('#' + randomId).load(chrome.runtime.getURL('/htmlfragments/toolbar.html'));
         console.log("Injected Toolbar");
         $(document).on('click', '#' + randomId + ' #FPDEX_Save',
             function (e) {
-                let data = collectForm('form.gradeform');
+                let data = [];
+                let studentData=getUserInfo();
+                let momento=new Date();
+                data.unshift({formData:collectForm('form.gradeform'),
+                            date:momento,
+                            student:getUserInfo()});
+                let fechastr=momento.toLocaleDateString()+" "+momento.toTimeString();
                 chrome.storage.local.set({ assignmentData: data });
+                if (studentData)
+                {
+                    alert ("Datos guardados de "+studentData.name + " a las " + fechastr);
+                }
+                else
+                {
+                    alert ("Datos guardados a las "+ fechastr)
+                }
             }
         );
         $(document).on('click', '#' + randomId + ' #FPDEX_Rescue', function (e) {
             chrome.storage.local.get('assignmentData').then(
-                function (data) { fillForm('form.gradeform', data.assignmentData); },
+                function (data) {
+                    let assignmentData=data.assignmentData[0];
+                    let studentData=assignmentData.student;                    
+                    let momento=new Date((Date)(assignmentData.date));
+                    let fechastr=momento.toLocaleDateString()+" "+momento.toTimeString();
+                    let mustDoIt=false;
+                    if (studentData)
+                    {
+                        mustDoIt=confirm ("Reestablecer datos guardados de \""+studentData.name + "\" a las " + fechastr);
+                    }
+                    else
+                    {
+                        mustDoIt=confirm ("Reestablecer datos guardados a las "+fechastr);
+                    }
+                    if (mustDoIt)
+                        fillForm('form.gradeform', assignmentData.formData); 
+                },
                 function (error) { alert('No se pudo recuperar') }
             );
         });
@@ -49,6 +84,13 @@ export function inject() {
     );
 }
 
+/**
+ * Convierte un texto dado en un número con decimales considerando que los
+ * decimales pueden ir por coma o punto.
+ * @param {string} t texto que contiene la nota (número con decimales)
+ * @returns null si no se pudo convertir o el número si se pud hacer la conversión.
+ */
+//TODO: mover este método a un módulo de "conversión de datos de entrada"
 function procesarNota(t)
 {
     let nota=null;
@@ -59,6 +101,14 @@ function procesarNota(t)
     return nota;
 }
 
+/**
+ * Método interno accesorio que permite seleccionar en un select 
+ * un valor de los que contiene.
+ * @param {object} select objeto JQuery del select donde se seleccionará el valor
+ * @param {string} valor Valor a seleccionar (string)
+ * @returns Retorna true si se selecciono el valor o false en caso contrario.
+ */
+//TODO: mover este método a un módulo de "manipulación de formularios"
 function seleccionarPorValorSelect(select,valor)
 {
     //Deselecionamos todos los options de cada CE.
@@ -77,6 +127,10 @@ function seleccionarPorValorSelect(select,valor)
     return false;
 }
 
+/**
+ * Método que inyecta la sección para bombear las notas desde caja de texto a
+ * los desplegables (tanto en CEs como en RAs)
+ */
 export function injectRAPump() {
     whenAvaliable('form.gradeform.mform fieldset').then(
         function (elm) {
@@ -136,6 +190,12 @@ export function injectRAPump() {
                         f = false;
                     }
                 }
+                /* Si el elemento DOM desaparece, volvemos a esperar a que aparezca */
+                whenNotAvaliable('form.gradeform.mform fieldset').then(
+                    function () {
+                        injectRAPump();
+                    }
+                )
             }
         });
 }

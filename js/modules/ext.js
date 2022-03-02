@@ -5,22 +5,46 @@
 import '/js/jquery-3.6.0.min.js';
 
 /**
-     * Busca todos los criterios de rúbrica (CR) y los retorna en un array de  objetos. Cada
-     * entrada del objeto tiene lo siguiente:
+ * Función ACCESORIA
+ * Dada una cadena como por ejemplo:
+ *  "( RA1.d, RA3.f, ra4.e,RA5.d ) Cosas que pasan"
+ * Extrae los CE en un array ([ "1.d" ,"3.f" ,"4.e" , "5.d" ] )
+ * Si no los encuentra, retorna un array vacío []
+ * Y eso es todo.
+ */
+function extractorCEdeCadena(text)
+{
+  let listaCEs = [];
+  let e1=/\((\s*(?:RA|ra|CE|ce)\d+\.\w\s*(?:,\s*(?:RA|ra|CE|ce).\.\w\s*)*)\)/g.exec(text);
+  if (e1 && e1.length>0)
+  {
+          let raEx = /([0-9]+\.\w)/g;          
+          let tmpA;
+          do {
+            tmpA = raEx.exec(e1[0]);
+            if (tmpA) listaCEs.push(tmpA[1]);
+          } while (tmpA);          
+  }
+  return listaCEs;
+}
+
+/**
+     * Busca todos los criterios de rúbrica (CR) y los retorna en un array de objetos. Cada
+     * entrada del objeto tiene lo siguiente ("criteriaList" sería el array e "i" la posición):
      *
-     *   - text: texto descriptor del CR
-     *   - CEs: array con todos los CEs del criterio (si siguen el formato esperado)
-     *   - logro: texto del nivel de logro conseguido
-     *   - porcentaje: porcentaje de peso de este CR en el global de CRs (de la puntuación máxima)
-     *   - score: Puntuación obtenida en este CR sobre scoreMax
-     *   - scoreMax: Puntuación máxima de este CR
-     *   - score10: Puntuación de este CR sobre 10 (siendo 10 scoreMax)
-     *   - scoreGlobalPart: Aportación a la nota global de este CR (si se suman todos se obtiene la nota final de la tarea sobre 10)
-     *   - feedback: Texto de retroalimentación
+     *   - criteriaList[i].text: texto descriptor del CR
+     *   - criteriaList[i].CEs: array con todos los CEs del criterio (si siguen el formato esperado)
+     *   - criteriaList[i].logro: texto del nivel de logro conseguido
+     *   - criteriaList[i].porcentaje: porcentaje de peso de este CR en el global de CRs (puntuación máxima del CR / suma máximos CR )
+     *   - criteriaList[i].score: Puntuación obtenida en este CR sobre scoreMax
+     *   - criteriaList[i].scoreMax: Puntuación máxima de este CR
+     *   - criteriaList[i].score10: Puntuación de este CR sobre 10 (siendo 10 scoreMax)
+     *   - criteriaList[i].scoreGlobalPart: Aportación a la nota global de este CR (si se suman todos se obtiene la nota final de la tarea sobre 10)
+     *   - criteriaList[i].feedback: Texto de retroalimentación
      * 
-     * Además, el array retornado tiene el siguiente método/función añadido:
+     * Además, el objeto retornado tiene un atributo común:
      * 
-     *   - calculateGrade(): método que calcula la nota sobre 10 de los criterios de rúbrica.
+     *   - criteriaList.gradeBasedOnCRs : método que calcula la nota sobre 10 de los criterios de rúbrica.
      * 
      * @returns array con la información de criterios de rúbrica o un número
      * negativo en caso de error:
@@ -30,44 +54,37 @@ import '/js/jquery-3.6.0.min.js';
     export function collectCRs () {
       //Obtenemos todos las filas de cada CR
       let criterias = $('tr.criterion').filter('[id^=advancedgrading-criteria]');
-      //Si no hay criterios, salimos, estamos en una página errónea.
+      //Si no hay criterios, salimos, estamos en una página si rúbrica.
       if (criterias.length == 0) {
         return -1;
       }
       //Aquí almacenamos los criterios
       let criteriaList = [];
-      //Suma de todos la máxima puntuación de cada criterio
+      //Aquí se almacena la suma de las puntuaciones máximas de cada criterio de cada criterio
       let scoreMaxSum = 0;
-      //Todos los criterios se han relleno, a priori, si... luego ya veremos.
+      //¿Todos los criterios se han relleno? A priori, si... luego ya veremos.
       let allCriteriaScoreMarked = true;
   
+      /* Recorremos todos los criterios antes extraídos */
       for (let i of criterias) {
-        //Texto del criterio de rúbrica
+        //Extraemos el texto del criterio de rúbrica
         let criteriaText = $(i).find('.description').text();
-        //Extraemos los CEs de la descripción de cada CR.
-        let raEx = /[( ,]RA([0-9]+\.\w)+[), ]/g;
-        let criteriaCEs = [];
-        let tmpA;
-        do {
-          tmpA = raEx.exec(criteriaText);
-          if (tmpA) criteriaCEs.push(tmpA[1]);
-        } while (tmpA);
-        //Nivel de logro marcado (texto)
-        let criteriaLogro = $(i).find('.levels td.level.checked div.definition').text().trim();
-        //Nivel de logro marcado (puntuación)
+        //Extraemos los CEs de la descripción de cada CR.        
+        let criteriaCEs=extractorCEdeCadena(criteriaText);        
+        //Nivel de logro marcado (el texto)
+        let criteriaTextoLogro = $(i).find('.levels td.level.checked div.definition').text().trim();
+        //Nivel de logro marcado (la puntuación)
         let criteriaScore = $(i).find('.levels td.level.checked div.score').text().replace('puntos', '').trim();
         
-        //Nivel de logro máximo (puntuación)
-          //Cálculo anterior (supone que el último es el máximo)
-            //let criteriaScoreMax = $(i).find('.levels td.level div.score:last').text().replace('puntos', '').trim();
-          //Cálculo nuevo 14/01/2022 (busca el máximo de todos los scores considerando que pueden no estar ordenados)
+        //Nivel de logro máximo (puntuación)          
+        //Cálculo: busca el máximo de todos los scores considerando que pueden no estar ordenados.
             let criteriaScoreMax=$.map($(i).find('.levels td.level div.score'),
                 function(node) {        
                   return parseFloat($(node).text().replace('puntos', '').trim());
                 }).reduce((a,b)=>Math.max(a,b));
 
         //Comentario del profesor para este nivel de logro
-        let criteriaVal = $(i).find('.remark textarea').val().replace(/\n/g, '<br>');
+        let criteriaFeedback = $(i).find('.remark textarea').val().replace(/\n/g, '<br>');
   
         //Si este CR no se ha marcado... no seguimos.
         allCriteriaScoreMarked = allCriteriaScoreMarked && criteriaScore;
@@ -78,29 +95,25 @@ import '/js/jquery-3.6.0.min.js';
         criteriaList.push({
           text: criteriaText,
           CEs: criteriaCEs,
-          logro: criteriaLogro,
+          logro: criteriaTextoLogro,
           score: parseFloat(criteriaScore),
           scoreMax: parseFloat(criteriaScoreMax),
-          feedback: criteriaVal
+          feedback: criteriaFeedback
         });
         scoreMaxSum += parseFloat(criteriaScoreMax);
   
       }
       //Calculamos porcentaje score10 y scoreGlobalPart
+      let gradeBasedOnCRs=0;
       for (let ci of criteriaList) {
         ci.porcentaje = ci.scoreMax * 100 / scoreMaxSum;
         ci.score10 = ci.score * 10 / ci.scoreMax;
-        ci.scoreGlobalPart = ci.score10 * ci.porcentaje / 100;
+        ci.scoreGlobalPart = ci.score10 * ci.porcentaje / 100;    
+        gradeBasedOnCRs+=ci.scoreGlobalPart;
       }
   
-      criteriaList.calculateGrade=function () {
-        let grade = 0;
-        for (let cr of this) {
-            grade += cr.score10 * cr.porcentaje;
-        }
-        grade=grade/100;
-        return grade;
-      };
+      //EStablecemos el atributo gradeBasedOnCRs que calcula la nota de la tarea en base a los CRs marcados.
+      criteriaList.gradeBasedOnCRs=gradeBasedOnCRs;
 
       return criteriaList;
     }
@@ -222,8 +235,8 @@ import '/js/jquery-3.6.0.min.js';
     if (checkAllCEsHaveCRsMapped(CEs,errors)) {
       //Si cada CE tiene al menos un CR.
       let gSUM = 0;
-      for (const [cedef, ce] of CEs) {
-        let g = 0;
+      for (const [cedef, ce] of CEs) { //CEs es un mapa (cedef key y ce valor)
+        let g = 0; 
         let p = 0;
         for (let cr of ce.cr) {
           g += cr.score10 * cr.porcentaje;
@@ -261,7 +274,7 @@ export function copyGradeToAllCEs (CEs, grade)
 
 /**
  * Selecciona en el "<SELECT>" correspondiente la nota de cada CE.
- * Antes de invocar este proceso hay que invocar elmétodo gradeCEs para calcula la nota de cada CE.
+ * Antes de invocar este proceso hay que invocar elmétodo gradeCEs para calcular la nota de cada CE.
  * @param {*} CEs Mapa con los CE ya calificados.
  * @param {*} errors Array opcinal para recopilar posibles errores
  * @returns true si todo ha ido bien o false en caso de que algún CE no se haya podido asignar.
@@ -274,6 +287,7 @@ export function copyGradeToAllCEs (CEs, grade)
      {
          //Deselecionamos todos los options de cada CE.
          value.ceSel.find('option').attr('selected',false);
+         //TODO: hay un método que hace parte de esta función seleccionarPorValorSelect (funcionalidad repetida)
          //Buscamos aquellos options cuyo valor sea la nota esperada
          let t=value.ceSel.find('option:contains("'+value.grade+'")');
          //check

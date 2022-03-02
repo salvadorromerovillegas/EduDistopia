@@ -75,7 +75,7 @@ export function procesarCEsCopyNote ()
         alert("No están todos los criterios de rúbrica rellenos y no se puede calcular la nota para cada criterio de evaluación.");
         return;
       }
-      nota=CRs.calculateGrade();
+      nota=CRs.gradeBasedOnCRs;      
     }
     else
     {
