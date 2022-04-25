@@ -1,10 +1,13 @@
 
 import '/js/jquery-3.6.0.min.js';
+import '/js/jquery-ui/jquery-ui.min.js';
 
-import { whenAvaliable, whenNotAvaliable } from './modules/dyn.js';
+import { whenAvaliable, whenNotAvaliable,ifAttributeChanged } from './modules/dyn.js';
 import { collectForm, fillForm, genRandomID, getUserInfo} from '/js/modules/u.js';
-import { roundGrade } from './modules/ext.js';
+import { roundGrade, collectCRs, calcCEMark } from './modules/ext.js';
 import { renderFeedback } from '/js/generarFeedbackMod.js';
+import { procesarCEsNotaDistribuida } from '/js/calcularCEsMod.js';
+import { seleccionarPorValorSelect } from '/js/modules/form.js';
 
 let rID = genRandomID();
 
@@ -14,52 +17,21 @@ let rID = genRandomID();
 export function inject() {
 
     let randomId = 'FPADEX_TOOLBAR_'+rID;
-    if ($('#' + randomId).length == 0) {
-        $('body').append("<div id='" + randomId + "'></div>");
-        $('#' + randomId).load(chrome.runtime.getURL('/htmlfragments/toolbar.html'));
-        console.log("Injected Toolbar");
-        $(document).on('click', '#' + randomId + ' #FPDEX_Save',
-            function (e) {
-                let data = [];
-                let studentData=getUserInfo();
-                let momento=new Date();
-                data.unshift({formData:collectForm('form.gradeform'),
-                            date:momento,
-                            student:getUserInfo()});
-                let fechastr=momento.toLocaleDateString()+" "+momento.toTimeString();
-                chrome.storage.local.set({ assignmentData: data });
-                if (studentData)
-                {
-                    alert ("Datos guardados de "+studentData.name + " a las " + fechastr);
-                }
-                else
-                {
-                    alert ("Datos guardados a las "+ fechastr)
-                }
+    if (!$('div[data-region=grading-navigation-panel] div.container-fluid').attr('data-fpadex-tool')) {
+        $('div[data-region=grading-navigation-panel] div.container-fluid').attr('data-fpadex-tool', true);
+        $.get(chrome.runtime.getURL('/htmlfragments/toolbar.html'), 
+            function (toolbarhtml)
+            {
+                let toolbar=$(toolbarhtml);
+                toolbar.attr('id',randomId);                
+                $('div[data-region=grading-navigation-panel] div.container-fluid').append(toolbar);
+                console.log("Injected Toolbar");
+                toolbar.find('#FPDEX_Save').click(saveForm);
+                toolbar.find('#FPDEX_Rescue').click(rescueForm);
+                let nh=$('.path-mod-assign [data-region="grade-panel"]').first().position().top+toolbar.height()+3;
+                $('.path-mod-assign [data-region="grade-panel"]').css('top',nh+'px');
             }
-        );
-        $(document).on('click', '#' + randomId + ' #FPDEX_Rescue', function (e) {
-            chrome.storage.local.get('assignmentData').then(
-                function (data) {
-                    let assignmentData=data.assignmentData[0];
-                    let studentData=assignmentData.student;                    
-                    let momento=new Date((Date)(assignmentData.date));
-                    let fechastr=momento.toLocaleDateString()+" "+momento.toTimeString();
-                    let mustDoIt=false;
-                    if (studentData)
-                    {
-                        mustDoIt=confirm ("Reestablecer datos guardados de \""+studentData.name + "\" a las " + fechastr);
-                    }
-                    else
-                    {
-                        mustDoIt=confirm ("Reestablecer datos guardados a las "+fechastr);
-                    }
-                    if (mustDoIt)
-                        fillForm('form.gradeform', assignmentData.formData); 
-                },
-                function (error) { alert('No se pudo recuperar') }
-            );
-        });
+        );                        
     }
 
     //Insertamos cuando esté disponible los botones extra y el estilo
@@ -68,21 +40,104 @@ export function inject() {
 
             //Estilo
             let formsty = chrome.runtime.getURL('/css/formstyles.css');
-            $('head').append(`<link rel="stylesheet" href="${formsty}" type="text/css" />`);
+            $('head').append(`<link rel="stylesheet" href="${formsty}" type="text/css" />`);            
+        }
+    );
+        
+    //Estilo JQuery UI
+    let formsty = chrome.runtime.getURL('/js/jquery-ui/jquery-ui.min.css');
+    $('head').append(`<link rel="stylesheet" href="${formsty}" type="text/css" />`);
+    
+}
 
-            //Botón insertar feedback
-            let btnID = 'FPADEX_INSERTAR_FEEDBACK_' + rID;
-            if (!document.getElementById(btnID)) {
-
-                let b = $('<button class="btn btn-info" style="font-size:9px">Insertar<br>Feedback</button>');
-                b.attr('id', btnID);
-                $(elm).append(b);
-                b.click(renderFeedback);
-            }
-
+//NEWFUNCTION 
+//Obtiene la información ya almacenada en la base de datos para el id dado
+function getAssignmentData(callback=null, id)
+{
+    callback = callback || function (data) {
+        console.log(data);
+    };
+    chrome.storage.local.get(id).then(callback,
+        function (error) {             
+            console.log(error);            
         }
     );
 }
+
+//NEWFUNCTION
+//Recoge el formulario y lo guarda en chrome.store.local
+function saveForm(event,contextVar='assignmentData') {    
+    getAssignmentData(function (data) {
+        try { 
+            data=data[contextVar];
+        } 
+        catch (e) { 
+            data=[]; 
+        }
+        let studentData = getUserInfo();
+        let momento = new Date();
+        data.unshift({
+            formData: collectForm('form.gradeform'),
+            date: momento,
+            student: getUserInfo()
+        });
+        if (data.length>20) data.pop();
+        let fechastr = momento.toLocaleDateString() + " " + momento.toLocaleString().split('GMT')[0];
+        let objectToStore={}; objectToStore[contextVar]=data;
+        chrome.storage.local.set(objectToStore);
+        if (studentData) {
+            alert("Datos guardados de " + studentData.name + " a las " + fechastr);
+        }
+        else {
+            alert("Datos guardados a las " + fechastr)
+        }
+    }, contextVar); 
+}
+
+//NEWFUNCTION
+//Rescata el formulario de chrome.store.local y lo rellena 
+function rescueForm(event, contextVar='assignmentData')
+{    
+    getAssignmentData(function (data) {     
+        let dialog=$(dialogHTML);
+        for (let i=0;i<data[contextVar].length;i++)
+        {
+            let assignmentData=data[contextVar][i];
+            let studentData=assignmentData.student;                    
+            let momento=new Date((Date)(assignmentData.date));
+            let fechastr=momento.toLocaleDateString()+" "+momento.toLocaleString();
+            let backupInfo;
+            if (studentData)
+            {
+                backupInfo=studentData.name + " (" + fechastr+")";
+            }
+            else
+            {
+                backupInfo="(" + fechastr+")";
+            }
+            let div=$("<div></div>");
+            div.append(backupInfo);
+            let btn=$("<button class='ui-button ui-widget ui-corner-all'>Rescatar</button>");
+            div.append(btn);
+            btn.click(function () {fillForm('form.gradeform', assignmentData.formData);
+                                   dialog.dialog( "close" );});
+            dialog.append(div);            
+        }
+        dialog.dialog({
+            autoOpen: false,
+            height: 400,
+            width: 750,
+            modal: true,
+            buttons: {
+              Cancelar: function() {
+                dialog.dialog( "close" );
+              }
+            }
+          }).dialog('open');
+        return;
+    }, contextVar);
+}
+
 
 /**
  * Convierte un texto dado en un número con decimales considerando que los
@@ -99,32 +154,6 @@ function procesarNota(t)
       nota = parseFloat(m);
     } 
     return nota;
-}
-
-/**
- * Método interno accesorio que permite seleccionar en un select 
- * un valor de los que contiene.
- * @param {object} select objeto JQuery del select donde se seleccionará el valor
- * @param {string} valor Valor a seleccionar (string)
- * @returns Retorna true si se selecciono el valor o false en caso contrario.
- */
-//TODO: mover este método a un módulo de "manipulación de formularios"
-function seleccionarPorValorSelect(select,valor)
-{
-    //Deselecionamos todos los options de cada CE.
-    select.find('option').attr('selected',false);
-    //Buscamos aquellos options cuyo valor sea la nota esperada
-    let t=select.find('option:contains("'+valor+'")');    
-    for (let e of t) //Para cada opción de las que contiene el valor esperado
-    {
-        //Seleccionamos la opción que coincide exactamente con la nota.                
-        if ($(e).text()===""+valor)
-        {
-            $(e).attr('selected',true);                        
-            return true;
-        }                               
-    }
-    return false;
 }
 
 /**
@@ -153,9 +182,13 @@ export function injectRAPump() {
                                 if (nota!==null && nota<=10 && nota>=0)
                                 {
                                     nota=roundGrade(nota);                                    
+                                    let lastSelect=null;
                                     for (let input of inputs) {
-                                        seleccionarPorValorSelect($('#' + $(input).attr('data-ref-edudist')),nota);
+                                        let sel=$('#' + $(input).attr('data-ref-edudist'));
+                                        seleccionarPorValorSelect(sel,nota);
+                                        lastSelect=sel;
                                     }
+                                    if (lastSelect) lastSelect.change();
                                 }
                                 else 
                                 {
@@ -174,8 +207,10 @@ export function injectRAPump() {
                                     nota=procesarNota($(input).val());
                                     if (nota!==null && nota<=10 && nota>=0)
                                     {
-                                        nota=roundGrade(nota);                                                            
-                                        seleccionarPorValorSelect($('#' + $(input).attr('data-ref-edudist')),nota);                                    
+                                        nota=roundGrade(nota);        
+                                        let sel=$('#' + $(input).attr('data-ref-edudist'));
+                                        seleccionarPorValorSelect(sel,nota);                                    
+                                        sel.change();
                                     }
                                     else 
                                     {
@@ -187,6 +222,15 @@ export function injectRAPump() {
                         });
                         $(fitem).find('.felement').append(button1);
                         $(fitem).find('.felement').append(button2);
+                        if (collectCRs()!==-1)
+                        {
+                            let button3 = $("<button style='margin-left:10px' class='btn btn-primary' id='ED_103OOPRRA133C'>CR -> CE</button>");
+                            button3.click(function()
+                            {
+                                procesarCEsNotaDistribuida();
+                            });                            
+                            $(fitem).find('.felement').append(button3);
+                        }                              
                         f = false;
                     }
                 }
@@ -197,5 +241,94 @@ export function injectRAPump() {
                     }
                 )
             }
+            creaSeccionNotaCRsProv();
+            creaSeccionNotaCEsProv();
+            creaBotonAddFeedback();
+
         });
 }
+
+
+/**
+ * Si aparece la sección para rellenar la nota por CRs entonces añade una sección para mostrar
+ * el cálculo provisional de la nota de los CRs y configura los eventos necesarios para que
+ * se actualice.
+ */
+function creaSeccionNotaCRsProv() {
+    let randomId="FPEXTD_nota_CRs_prov"+rID;
+    if ($("tr.criterion td.level").length > 0 && $("span#"+randomId).length == 0) 
+    {
+        $(`<div class="form-group row  fitem ">
+                <div class="col-md-3"><span class="float-sm-right text-nowrap"></span>                
+                <span class="col-form-label d-inline-block ">
+                    Calificación calculada del libro de calificaciones (según CRs):
+                </span>                    
+                </div>
+                    <div class="col-md-9 form-inline felement" data-fieldtype="static">
+                    <div class="form-control-static">
+                        <span id="${randomId}">-</span>
+                    </div>
+                    <div class="form-control-feedback invalid-feedback" id="">                        
+                    </div>
+                </div>
+                </div>`).insertBefore("div#fitem_id_currentgrade");
+
+        ifAttributeChanged("tr.criterion td.level", "aria-checked", function () {
+            $("span#"+randomId).html(roundGrade(collectCRs(true).gradeBasedOnCRs));
+        });
+        $("span#"+randomId).html(roundGrade(collectCRs(true).gradeBasedOnCRs));
+    }
+}
+
+/**
+ * Si aparece la sección para poner las notas de cada CE entonces añade una sección para mostrar
+ * el cálculo provisional de la nota de los CEs y configura para que se actualice.
+ */
+function creaSeccionNotaCEsProv() 
+{
+    let randomId="FPEXTD_nota_CEs_prov"+rID;
+    if ($('[id^=fitem_menuoutcome_].fitem select').length > 0 && $("span#"+randomId).length == 0) 
+    {
+        $(` <div class="form-group row fitem">
+            <div class="col-md-3"><span class="float-sm-right text-nowrap"></span>                
+                <span class="col-form-label d-inline-block ">
+                    Calificación calculada para criterios de evaluación (según CEs):
+                </span>                    
+            </div>
+            <div class="col-md-9 form-inline felement" data-fieldtype="static">
+            <div class="form-control-static">
+                <span id="${randomId}">-</span>
+            </div>
+            <div class="form-control-feedback invalid-feedback" id="">                        
+            </div>
+        </div>
+        </div>`).insertBefore("div#fitem_id_currentgrade");
+
+        $('[id^=fitem_menuoutcome_].fitem select').on('change', function (e) {
+            $("span#"+randomId).html(calcCEMark(true));
+        });
+        
+        $("span#"+randomId).html(calcCEMark(true));
+    }
+}
+
+function creaBotonAddFeedback()
+{    
+            //Botón insertar feedback
+            let btnID = 'FPADEX_INSERTAR_FEEDBACK_' + rID;
+            if (!document.getElementById(btnID)) {
+
+                let b = $('<button class="btn btn-info" style="margin-bottom:10px">Insertar Feedback</button>');
+                b.attr('id', btnID);                
+                $("div#fitem_id_assignfeedbackcomments_editor label").append(b);
+                b.click(renderFeedback);
+            }
+}
+
+let dialogHTML=`
+<div id="dialog-form" title="Selecciona copia de seguridad">
+  <div>
+    
+  </div>
+</div>
+`;

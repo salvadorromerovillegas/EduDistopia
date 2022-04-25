@@ -3,6 +3,7 @@
  */
 
 import '/js/jquery-3.6.0.min.js';
+import {seleccionarPorValorSelect} from '/js/modules/form.js';
 
 /**
  * Función ACCESORIA
@@ -46,12 +47,14 @@ function extractorCEdeCadena(text)
      * 
      *   - criteriaList.gradeBasedOnCRs : método que calcula la nota sobre 10 de los criterios de rúbrica.
      * 
+     * @param consideraCRNoRellenadoComo0 este parámetro determina si se considera como 0 el CR no rellenado.
+     * 
      * @returns array con la información de criterios de rúbrica o un número
      * negativo en caso de error:
      * -1 No se encuentra la tabla de criterios
-     * -2 No están rellenos todos los criterios.
+     * -2 No están rellenos todos los criterios (nunca retornará este valor si el parámetro consideraCRNoRellenadoComo0 es true).
      */
-    export function collectCRs () {
+    export function collectCRs (consideraCRNoRellenadoComo0 = false) {
       //Obtenemos todos las filas de cada CR
       let criterias = $('tr.criterion').filter('[id^=advancedgrading-criteria]');
       //Si no hay criterios, salimos, estamos en una página si rúbrica.
@@ -73,9 +76,18 @@ function extractorCEdeCadena(text)
         let criteriaCEs=extractorCEdeCadena(criteriaText);        
         //Nivel de logro marcado (el texto)
         let criteriaTextoLogro = $(i).find('.levels td.level.checked div.definition').text().trim();
+        if (!criteriaTextoLogro && consideraCRNoRellenadoComo0)
+        {
+          criteriaTextoLogro = "UNSELECTED";
+        }
+
         //Nivel de logro marcado (la puntuación)
-        let criteriaScore = $(i).find('.levels td.level.checked div.score').text().replace('puntos', '').trim();
-        
+        let criteriaScore = $(i).find('.levels td.level.checked div.score').text().replace('puntos', '').trim();        
+        if (!criteriaScore && consideraCRNoRellenadoComo0)
+        {
+          criteriaScore='0';
+        }
+
         //Nivel de logro máximo (puntuación)          
         //Cálculo: busca el máximo de todos los scores considerando que pueden no estar ordenados.
             let criteriaScoreMax=$.map($(i).find('.levels td.level div.score'),
@@ -84,7 +96,7 @@ function extractorCEdeCadena(text)
                 }).reduce((a,b)=>Math.max(a,b));
 
         //Comentario del profesor para este nivel de logro
-        let criteriaFeedback = $(i).find('.remark textarea').val().replace(/\n/g, '<br>');
+        let criteriaFeedback = $(i).find('.remark textarea').val();
   
         //Si este CR no se ha marcado... no seguimos.
         allCriteriaScoreMarked = allCriteriaScoreMarked && criteriaScore;
@@ -165,6 +177,44 @@ function extractorCEdeCadena(text)
         }
       }
       return ceMap;
+    }
+
+    /**
+     * Calcula la nota basada en los CEs configurados.
+     * @param {boolean} ignoreNotSelected si un CE no tiene nota, entonces se ignora.
+     * @returns -2 si no hay CEs en la página dada.
+     *          -1 si hay algún CE sin marcar (no retornará este valor si ignoreNotSelected es true)
+     *           o número decimal con la nota.
+     */
+    export function calcCEMark(ignoreNotSelected=false)
+    {
+    //Recogemos los CEs
+    let CEs = collectCEs();
+
+    //Si el mapa contiene elementos
+    if (CEs.size > 0) {
+        let medGrade = 0;
+        let allCEsGraded = true;
+        for (const [key, val] of CEs) {
+            if (val.currGrade !== null) {
+                medGrade = medGrade + val.currGrade;
+            }
+            else if (!ignoreNotSelected) {
+                allCEsGraded = false;
+                break;
+            }
+        }
+        if (allCEsGraded) {
+            medGrade = Math.round(medGrade * 100.0 / CEs.size) / 100.0;
+            return medGrade;
+        }
+        else {
+            return -1;
+        }
+    }
+    else {
+        return -2;
+    }
     }
 
    /**
@@ -282,33 +332,19 @@ export function copyGradeToAllCEs (CEs, grade)
   export function asignarNotasCEs (CEs, errors=[])
   {
       let ok=true;
+      let lastSelect=null;
      //Recorremos todos los CEs.     
      for(const [key,value] of CEs)
      {
-         //Deselecionamos todos los options de cada CE.
-         value.ceSel.find('option').attr('selected',false);
-         //TODO: hay un método que hace parte de esta función seleccionarPorValorSelect (funcionalidad repetida)
-         //Buscamos aquellos options cuyo valor sea la nota esperada
-         let t=value.ceSel.find('option:contains("'+value.grade+'")');
-         //check
-         let selected=false;
-         for (let e of t)
-         {
-             //Seleccionamos la opción que coincide exactamente con la nota.                
-             if ($(e).text()===""+value.grade)
-             {
-                 $(e).attr('selected',true);
-                 console.log(key+" CE asignada nota "+value.grade);
-                 selected=true;
-                 break;
-             }                              
-         }
+         let selected=seleccionarPorValorSelect(value.ceSel,value.grade);
+         lastSelect=value.ceSel;
          if (!selected)
          {
            ok=false;
            errors.push("No se ha podido seleccionar la nota "+value.grade+" para el criterio de evaluación "+ key);
          }
      }
+     if (lastSelect) lastSelect.change();
      return ok;
   }
 

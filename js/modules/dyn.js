@@ -101,3 +101,31 @@
         }
     });
 }
+
+/**
+ * Llama a la función pasada por parámetro cuando el atributo (attribute) de los elementos obtenidos con el selector
+ * cambia de valor.
+ * @param {string} selector CSS query de los elementos a observar 
+ * @param {string} attribute Atributo cuya modificación hará que se invoque la función callback.
+ * @param {function} callback función a invocar cuando un nodo donde el atributo indicado se modifica.
+ * La función callback puede tener 3 parámetros opcionales: target (nodo), nombre del atributo, valor anterior.
+ * Si la funcion callback retorna true, se detiene la observación.
+ */
+ export function ifAttributeChanged (selector, attribute, callback) {
+  
+    const elements=document.querySelectorAll(selector);
+    for (let element of elements )
+    {
+        const observer= new MutationObserver(mrecords=>
+            {
+                for (let mrecord of mrecords) {
+                     if (mrecord.attributeName==attribute 
+                         && callback(mrecord.target, mrecord.attributeName, mrecord.oldValue))
+                        observer.disconnect();   
+                }
+            });
+        observer.observe(element,{
+            attributes: true
+        });
+    }  
+}

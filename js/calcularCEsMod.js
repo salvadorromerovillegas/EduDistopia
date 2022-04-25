@@ -89,7 +89,7 @@ export function procesarCEsCopyNote ()
     let errors=[];
     let ok=asignarNotasCEs(CEs,errors);
     if (ok) {
-        alert("Notas por CE procesadas.\n Nota media para CEs: " + nmCEs);        
+        alert("Notas por CE procesadas.\n Nota media para CEs: " + nota);        
     }
     else {
         alert("No se ha podido asignar la calificación.\n\n"+errors.join('\n'));

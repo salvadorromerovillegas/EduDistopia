@@ -30,19 +30,62 @@ export function renderFeedback () {
         }
         let html = '<TABLE border="1" id="'+id+'">';
         for (let i of CRs) {
+            let feedback=toHTMLEntities(i.feedback);
             html = html + `
             <TR>
-                <TD colspan='3' style='border: 1px solid black; background-color:#eeeeee; font-size:1.3em'>${i.text}</TD>
+                <TD colspan='3' style='border: 1px solid black; background-color:#eeeeee; font-size:1em'>${i.text}</TD>
             </TR>
             <TR>
-                <TD style='border: 1px solid black;'>${i.logro}</TD>
-                <TD style='border: 1px solid black;'>${i.score} de ${i.scoreMax}</TD>
-                <TD style='border: 1px solid black;'>${i.feedback}</TD>
+                <TD style='border: 1px solid black; width:40%; font-size:0.8em'>${i.logro}</TD>
+                <TD style='border: 1px solid black; width:10%; text-align:center; font-size:0.8em'>${i.score} de ${i.scoreMax}</TD>
+                <TD style='border: 1px solid black; width:50%; font-size:0.8em'>${feedback}</TD>
             </TR>
             `;            
         }
         html += '</TABLE>';
-        $('#id_assignfeedbackcomments_editoreditable').append(html);      
-        $('#id_assignfeedbackcomments_editoreditable').focus();      
+        
+        insertarEnFeedback(html);
     }   
+}
+
+function insertarEnFeedback(txt) {
+
+    let editdiv = $('div#fitem_id_assignfeedbackcomments_editor');
+    let lnk;
+    if (editdiv != null && (lnk = editdiv.find('iframe')).length > 0) {
+        let tmp=$(lnk.contents()).find('body#tinymce');
+        tmp.append(txt);
+        tmp.focus();
+
+    }
+    else if (editdiv != null && (lnk = editdiv.find('div.editor_atto div#id_assignfeedbackcomments_editoreditable')).length > 0) {
+        lnk.append(txt);
+        lnk.focus();
+    }
+    else
+    {
+        let r=confirm('No se ha encontrado un editor de feedback Atto o TinyMCE. ¿Deseas que se copie al portapapeles el feedback (HTML)?');
+        if (r)
+        {
+            let ca=navigator.clipboard.writeText(txt);
+            if (ca instanceof Promise)
+            {
+                ca.then(function () {
+                    alert("Feedback copiado al portapapeles en formato HTML.");
+                }, function () {
+                    alert ("Falló al copiar al portapapeles.");
+                });
+
+            }
+        }
+    }
+
+}
+
+function toHTMLEntities(string) {    
+    
+    let stringMod=string.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;');
+    stringMod=stringMod.replace(/\n/g, '<br>');
+    return stringMod;
+    
 }

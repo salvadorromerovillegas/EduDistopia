@@ -4,11 +4,12 @@
     "version": "1.0.1",
     "author": "Salvador Romero Villegas",
     "manifest_version": 3,
+    "default_locale": "es",
     "background":
     {
         "service_worker":"js/background.js"
     },
-    "permissions": ["storage","activeTab","scripting","tabs"],
+    "permissions": ["storage","activeTab","scripting","tabs", "clipboardWrite"],
     "action": {
         "default_title": "Haz clic aquí para ver el cajón de utilidades",
         "default_popup": "/popups/ask.html",
@@ -29,10 +30,13 @@
       "web_accessible_resources": [
         {
             "resources": [
-                "/css/*.css",
-                "/htmlfragments/*.html",
-                "/js/injectable.js",
+                "/css/*.css",                
                 "/js/jquery-*.js",
+                "/js/jquery-ui/jquery-ui.min.css",
+                "/js/jquery-ui/jquery-ui.min.js",                
+                "/js/jquery-ui/images/*.png",
+                "/htmlfragments/*.html",
+                "/js/injectable.js",                
                 "/js/promedioCEs.js",
                 "/js/calcularCEsMod.js",
                 "/js/generarFeedbackMod.js",
