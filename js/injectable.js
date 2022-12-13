@@ -8,30 +8,36 @@ import { roundGrade, collectCRs, calcCEMark } from './modules/ext.js';
 import { renderFeedback } from '/js/generarFeedbackMod.js';
 import { procesarCEsNotaDistribuida } from '/js/calcularCEsMod.js';
 import { seleccionarPorValorSelect } from '/js/modules/form.js';
+import { getStoredData } from '/js/modules/localstoragehelpers.js';
+import { creaSeccionNotaCEPond } from '/js/modules/cepond.js';
+import { appendToolbarTo, toolbarHeight, setSaveFormButtonHandler, setRescueFormButtonHandler, notificar } from '/js/modules/toolbar.js';
+
+chrome.storage.sync.get(null,(items)=>console.log(items));
+//logging stored items
+chrome.storage.local.get(null,(items)=>console.log(items));
+
 
 let rID = genRandomID();
 
 /**
- * Inyecta el toolbar para las operaciones de guardar y rescatar
+ * Inyecta el toolbar para las operaciones de guardar y rescatar, la hoja de estilos para
+ * formatear el rubricador y la hoja de estilos de jquery-ui usada para algunos aspectos.
  */
 export function inject() {
 
     let randomId = 'FPADEX_TOOLBAR_'+rID;
     if (!$('div[data-region=grading-navigation-panel] div.container-fluid').attr('data-fpadex-tool')) {
-        $('div[data-region=grading-navigation-panel] div.container-fluid').attr('data-fpadex-tool', true);
-        $.get(chrome.runtime.getURL('/htmlfragments/toolbar.html'), 
-            function (toolbarhtml)
-            {
-                let toolbar=$(toolbarhtml);
-                toolbar.attr('id',randomId);                
-                $('div[data-region=grading-navigation-panel] div.container-fluid').append(toolbar);
-                console.log("Injected Toolbar");
-                toolbar.find('#FPDEX_Save').click(saveForm);
-                toolbar.find('#FPDEX_Rescue').click(rescueForm);
-                let nh=$('.path-mod-assign [data-region="grade-panel"]').first().position().top+toolbar.height()+3;
-                $('.path-mod-assign [data-region="grade-panel"]').css('top',nh+'px');
-            }
-        );                        
+        //Añadimos el toolbar
+        appendToolbarTo($('div[data-region=grading-navigation-panel] div.container-fluid'));
+        //Ampliamos la altura de la región donde se inserta el toolbar
+        let nh=$('.path-mod-assign [data-region="grade-panel"]').first().position().top+toolbarHeight();
+        $('.path-mod-assign [data-region="grade-panel"]').css('top',nh+'px');
+        //Establecemos el manejador del botón guardar formularios
+        setSaveFormButtonHandler(saveForm);
+        //Establecemos el manejador del botón guardar formularios
+        setRescueFormButtonHandler(rescueForm);
+        //Marcamos el div donde hemos insertado el toolbar para que no se vuelva a insertar el toolbar
+        $('div[data-region=grading-navigation-panel] div.container-fluid').attr('data-fpadex-tool', true);                              
     }
 
     //Insertamos cuando esté disponible los botones extra y el estilo
@@ -50,40 +56,35 @@ export function inject() {
     
 }
 
-//NEWFUNCTION 
-//Obtiene la información ya almacenada en la base de datos para el id dado
-function getAssignmentData(callback=null, id)
-{
-    callback = callback || function (data) {
-        console.log(data);
-    };
-    chrome.storage.local.get(id).then(callback,
-        function (error) {             
-            console.log(error);            
-        }
-    );
-}
+
 
 //NEWFUNCTION
 //Recoge el formulario y lo guarda en chrome.store.local
 function saveForm(event,contextVar='assignmentData') {    
-    getAssignmentData(function (data) {
-        try { 
+    getStoredData(function (data) {
+        if (typeof data === 'object' && contextVar in data)         
+        { 
             data=data[contextVar];
         } 
-        catch (e) { 
+        else 
+        { 
             data=[]; 
         }
         let studentData = getUserInfo();
         let momento = new Date();
         data.unshift({
             formData: collectForm('form.gradeform'),
-            date: momento,
+            date: momento.toString(),
             student: getUserInfo()
         });
+        
+        //Eliminamos aquellos elementos del array que no son válidos 
+        data=data.filter(function (val,idx,array) { return 'date' in val && 'formData' in val; });
+
         if (data.length>20) data.pop();
         let fechastr = momento.toLocaleDateString() + " " + momento.toLocaleString().split('GMT')[0];
-        let objectToStore={}; objectToStore[contextVar]=data;
+        let objectToStore={}; 
+        objectToStore[contextVar]=data;
         chrome.storage.local.set(objectToStore);
         if (studentData) {
             alert("Datos guardados de " + studentData.name + " a las " + fechastr);
@@ -98,13 +99,20 @@ function saveForm(event,contextVar='assignmentData') {
 //Rescata el formulario de chrome.store.local y lo rellena 
 function rescueForm(event, contextVar='assignmentData')
 {    
-    getAssignmentData(function (data) {     
+    getStoredData(function (data) {  
+        if (typeof data !== 'object' || !(contextVar in data) || data[contextVar].length===0)         
+        { 
+            alert("No hay datos guardados.");
+            return;    
+        }         
+        
         let dialog=$(dialogHTML);
         for (let i=0;i<data[contextVar].length;i++)
         {
             let assignmentData=data[contextVar][i];
+            if (!assignmentData.formData || !assignmentData.date) continue;
             let studentData=assignmentData.student;                    
-            let momento=new Date((Date)(assignmentData.date));
+            let momento=new Date(assignmentData.date);
             let fechastr=momento.toLocaleDateString()+" "+momento.toLocaleString();
             let backupInfo;
             if (studentData)
@@ -230,6 +238,7 @@ export function injectRAPump() {
                                 procesarCEsNotaDistribuida();
                             });                            
                             $(fitem).find('.felement').append(button3);
+                            
                         }                              
                         f = false;
                     }
@@ -244,6 +253,7 @@ export function injectRAPump() {
             creaSeccionNotaCRsProv();
             creaSeccionNotaCEsProv();
             creaBotonAddFeedback();
+            creaSeccionNotaCEPond();
 
         });
 }
@@ -258,24 +268,42 @@ function creaSeccionNotaCRsProv() {
     let randomId="FPEXTD_nota_CRs_prov"+rID;
     if ($("tr.criterion td.level").length > 0 && $("span#"+randomId).length == 0) 
     {
-        $(`<div class="form-group row  fitem ">
-                <div class="col-md-3"><span class="float-sm-right text-nowrap"></span>                
+        $(`<div class="form-group row fitem fpadextei">
+                <div class="col-sm-5"><span class="float-sm-right text-nowrap"></span>                
                 <span class="col-form-label d-inline-block ">
-                    Calificación calculada del libro de calificaciones (según CRs):
+                    Calificación calculada del libro de calificaciones (según <abbr title="Criterios de rúbrica">CRs</abbr>):
                 </span>                    
                 </div>
-                    <div class="col-md-9 form-inline felement" data-fieldtype="static">
+                    <div class="col-sm-7 form-inline felement" data-fieldtype="static">
                     <div class="form-control-static">
-                        <span id="${randomId}">-</span>
+                        <span id="${randomId}">-</span> (Nota orientativa <b>no mostrada al alumnado</b>) 
                     </div>
                     <div class="form-control-feedback invalid-feedback" id="">                        
                     </div>
                 </div>
                 </div>`).insertBefore("div#fitem_id_currentgrade");
 
-        ifAttributeChanged("tr.criterion td.level", "aria-checked", function () {
-            $("span#"+randomId).html(roundGrade(collectCRs(true).gradeBasedOnCRs));
-        });
+        let calcularNotaProvCR=()=>{
+            let notaProvisionalBasadaEnCR=roundGrade(collectCRs(true).gradeBasedOnCRs,2);
+            notificar(`Nota provisional basada en criterios de rúbrica: ${notaProvisionalBasadaEnCR}`,1);
+            $("span#"+randomId).html(notaProvisionalBasadaEnCR);
+        };
+        setTimeout(calcularNotaProvCR,500);
+        //Lanzamos la actualización de la nota provisional CRs 1 segundo después del mouseup
+        $("tr.criterion td.level").mouseup(
+            function()
+            {
+                setTimeout(calcularNotaProvCR,500);
+            }
+        );
+
+        /*ifAttributeChanged("tr.criterion td.level", "aria-checked", function (a,b,c) {
+            console.log(a, a.getAttribute('aria-checked'),b,c);            
+            let notaProvisionalBasadaEnCR=roundGrade(collectCRs(true).gradeBasedOnCRs);
+            notificar(`Nota provisional basada en criterios de rúbrica: ${notaProvisionalBasadaEnCR}`,1);
+            $("span#"+randomId).html(notaProvisionalBasadaEnCR);
+
+        });*/
         $("span#"+randomId).html(roundGrade(collectCRs(true).gradeBasedOnCRs));
     }
 }
@@ -289,33 +317,47 @@ function creaSeccionNotaCEsProv()
     let randomId="FPEXTD_nota_CEs_prov"+rID;
     if ($('[id^=fitem_menuoutcome_].fitem select').length > 0 && $("span#"+randomId).length == 0) 
     {
-        $(` <div class="form-group row fitem">
-            <div class="col-md-3"><span class="float-sm-right text-nowrap"></span>                
-                <span class="col-form-label d-inline-block ">
-                    Calificación calculada para criterios de evaluación (según CEs):
+        $(`<div class="form-group row fitem fpadextei">
+            <div class="col-sm-5"><span class="float-sm-right text-nowrap"></span>                
+                <span class="col-form-label d-inline-block " alt="Media aritmética (no ponderada) de la nota de los criterios de evaluación">
+                    Media ARITMÉTICA de la nota de los criterios de evaluación:
                 </span>                    
             </div>
-            <div class="col-md-9 form-inline felement" data-fieldtype="static">
+            <div class="col-sm-7 form-inline felement" data-fieldtype="static">
             <div class="form-control-static">
-                <span id="${randomId}">-</span>
+                <span id="${randomId}">-</span> (Nota orientativa <b>no mostrada al alumnado</b>)
+
             </div>
             <div class="form-control-feedback invalid-feedback" id="">                        
             </div>
         </div>
         </div>`).insertBefore("div#fitem_id_currentgrade");
 
-        $('[id^=fitem_menuoutcome_].fitem select').on('change', function (e) {
-            $("span#"+randomId).html(calcCEMark(true));
-        });
-        
-        $("span#"+randomId).html(calcCEMark(true));
+        let calcularNotaProvCE=function () {
+            let ceMark=calcCEMark(true);            
+            if (ceMark>=0) {
+                $("span#"+randomId).html(ceMark);
+                notificar("Nota prov. media aritmética CE: "+ceMark,2);
+            }
+            else 
+            {
+                $("span#"+randomId).html('[No disponible]');
+                notificar("",2);
+            }
+        }
+        $('[id^=fitem_menuoutcome_].fitem select').on('change', calcularNotaProvCE);
+        setTimeout(calcularNotaProvCE,500);
     }
 }
 
+/**
+ * Añade el botón de añadir feedback justo encima de la sección de feedback.
+ */
 function creaBotonAddFeedback()
 {    
             //Botón insertar feedback
             let btnID = 'FPADEX_INSERTAR_FEEDBACK_' + rID;
+            //Si no existe lo insertamos
             if (!document.getElementById(btnID)) {
 
                 let b = $('<button class="btn btn-info" style="margin-bottom:10px">Insertar Feedback</button>');

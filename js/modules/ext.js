@@ -1,5 +1,7 @@
 /**
- * Módulo extractor de CR y CE de la página de corrección de la tarea por rúbrica.
+ * Módulo con funciones para extraer los CRs y CES de la página de corrección de la tarea por rúbrica,
+ * y también para calcular la nota por CRs a CEs y demás.
+ * 
  */
 
 import '/js/jquery-3.6.0.min.js';
@@ -137,9 +139,10 @@ function extractorCEdeCadena(text)
      * - ceSel: objeto JQuery con el select para poner la nota del CE mapeado.
      * - currGrade : la nota marcada en el CE o null si no la hay marcada.
      * - cr: array vacío para almacenar en un futuro los CRs asociados a este CE.
+     * @param {boolean} silent En caso de error, no genera mensajes de alerta.
      * @returns mapa con todos los CE encontrados.
      */
-    export function collectCEs () {
+    export function collectCEs (silent=false) {
       const ceMap = new Map();
       const ceOutcomes=$("[id^=fitem_menuoutcome]");
       if (ceOutcomes.length==0) {
@@ -155,7 +158,7 @@ function extractorCEdeCadena(text)
           //Obtenemos el select 
           let ceSel = $($dCE).find('select').filter('[name^=outcome]');
           if (ceSel.length != 1) {
-            alert("ERROR 13: Formulario origen alterado (select), hay que reprogramarlo, esta extensión ya no sirve.");
+            !silent && alert("ERROR 13: Formulario origen alterado (select), hay que reprogramarlo, esta extensión ya no sirve.");
             console.log("ERROR 13: Formulario origen alterado (select), hay que reprogramarlo, esta extensión ya no sirve.");
             break;
           }
@@ -171,7 +174,7 @@ function extractorCEdeCadena(text)
             });
         }
         else {
-          alert("ERROR 12: Formulario origen alterado (label), hay que reprogramarlo, esta extensión ya no sirve.");
+          !silent && alert("ERROR 12: Formulario origen alterado (label), hay que reprogramarlo, esta extensión ya no sirve.");
           console.log("ERROR 12: Formulario origen alterado (label), hay que reprogramarlo, esta extensión ya no sirve.");
           break;
         }
@@ -189,7 +192,7 @@ function extractorCEdeCadena(text)
     export function calcCEMark(ignoreNotSelected=false)
     {
     //Recogemos los CEs
-    let CEs = collectCEs();
+    let CEs = collectCEs(true);
 
     //Si el mapa contiene elementos
     if (CEs.size > 0) {
@@ -270,7 +273,10 @@ function extractorCEdeCadena(text)
    *  @param grade Nota numérica. 
    *  @returs Nota redondeada.
   */
-  export function roundGrade (grade) { return Math.round(grade * 10) / 10; }
+  export function roundGrade (grade,dec=1) { 
+        let base=Math.pow(10,dec); 
+        return Math.round(grade * base) / base; 
+      }
   
   /**
    * Realiza el cálculo de la nota de cada CE en base a los CR que 

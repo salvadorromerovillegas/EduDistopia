@@ -98,6 +98,7 @@ export function setCEPonds (lines=null)
  * Añade la sección donde aparecerá la nota de los CE ponderados y el botón de calcular la nota ponderada basada en CEs.
  */
  export function creaSeccionNotaCEPond() {  
+  spanConNotaPond.html("-");
   if ($("tr.criterion td.level").length > 0 && $("span#"+idSpanConNotaPond).length == 0) 
   {
       section.insertBefore("div#fitem_id_currentgrade");
@@ -293,16 +294,17 @@ const idBotonCalcularNotCEPond=`FPADEXTND_CESB_${rID}`;
 
 //Código de la sección donde aparecerá la nota ponderada:
 const sectionHTML=`
-        <div class="form-group row  fitem ">
-                <div class="col-md-3"><span class="float-sm-right text-nowrap"></span>                
+        <div class="form-group row fitem fpadextei">
+                <div class="col-sm-5"><span class="float-sm-right text-nowrap"></span>                
                 <span class="col-form-label d-inline-block ">
-                    Calificación media PONDERADA de los CE :
+                    Media PONDERADA de la nota de los criterios de evaluación:
                 </span>                    
                 </div>
-                    <div class="col-md-9 form-inline felement" data-fieldtype="static">
+                    <div class="col-sm-7 form-inline felement" data-fieldtype="static">
                     <div class="form-control-static">
                         <span id="${idSpanConNotaPond}">-</span>
-                        <button style='margin-left:10px' class='btn btn-primary' id='${idBotonCalcularNotCEPond}'>Calcular</button>
+                        <button style='margin-left:10px' class='btn btn-primary btn-sm' id='${idBotonCalcularNotCEPond}'>Calcular</button>
+                         (Nota orientativa <b>no mostrada al alumnado</b>)
                     </div>
                     <div class="form-control-feedback invalid-feedback" id="">                        
                     </div>

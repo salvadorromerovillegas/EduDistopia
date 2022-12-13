@@ -44,3 +44,32 @@ table.criteria tr.criterion td.remark {
     width: 95%;  
     min-height: 180px;  
   }
+
+  div:has(div.fpadextndtb) {
+    height: 100px;
+
+  }
+
+  div.fpadextndtb {
+    padding: 3px; 
+    color:rgb(63, 63, 63); 
+    background: rgb(203, 204, 204);
+   }
+
+  div.fpadextndtb .notificationarea {
+    margin: 0px 5px;
+    font-size: 9px;
+    vertical-align: middle;
+    line-height: 24px;
+    background: rgb(229 229 229);
+    padding: 0px 7px;
+    border-radius: 5px;
+  }
+ 
+  div.fpadextei{
+    font-size:9px;
+    background: rgb(241 234 234);
+    margin: 5px 0px !important;
+    padding: 5px;
+    border-radius: 5px;
+  }

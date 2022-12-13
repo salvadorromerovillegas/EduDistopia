@@ -1,4 +1,5 @@
 import {collectCRs} from '/js/modules/ext.js';
+import {generarTablaCalculoCEPonderado} from '/js/modules/cepond.js';
 import {genRandomID} from '/js/modules/u.js';
 
 
@@ -28,7 +29,8 @@ export function renderFeedback () {
                 return;
             }
         }
-        let html = '<TABLE border="1" id="'+id+'">';
+
+        let html = `<div id="${id}"><div id='notamod_${id}'></div><BR><TABLE border="1">`;
         for (let i of CRs) {
             let feedback=toHTMLEntities(i.feedback);
             html = html + `
@@ -42,9 +44,14 @@ export function renderFeedback () {
             </TR>
             `;            
         }
-        html += '</TABLE>';
+        html += '</TABLE></div>';
         
-        insertarEnFeedback(html);
+        if (insertarEnFeedback(html))
+        {
+            console.log(`#${id}#notamod_${id}`);
+            generarTablaCalculoCEPonderado($(`#${id} #notamod_${id}`));
+        }
+
     }   
 }
 
@@ -56,11 +63,12 @@ function insertarEnFeedback(txt) {
         let tmp=$(lnk.contents()).find('body#tinymce');
         tmp.append(txt);
         tmp.focus();
-
+        return true;
     }
     else if (editdiv != null && (lnk = editdiv.find('div.editor_atto div#id_assignfeedbackcomments_editoreditable')).length > 0) {
         lnk.append(txt);
         lnk.focus();
+        return true;
     }
     else
     {
@@ -78,6 +86,7 @@ function insertarEnFeedback(txt) {
 
             }
         }
+        return false;
     }
 
 }

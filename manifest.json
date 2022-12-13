@@ -1,7 +1,7 @@
 {
     "name": "EduDistopía",    
     "description": "FP a Distancia Andalucía Extensión Navegador para Docentes",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "Salvador Romero Villegas",
     "manifest_version": 3,
     "default_locale": "es",
@@ -35,16 +35,15 @@
                 "/js/jquery-ui/jquery-ui.min.css",
                 "/js/jquery-ui/jquery-ui.min.js",                
                 "/js/jquery-ui/images/*.png",
-                "/htmlfragments/*.html",
                 "/js/injectable.js",                
                 "/js/promedioCEs.js",
                 "/js/calcularCEsMod.js",
                 "/js/generarFeedbackMod.js",
                 "/js/modules/*"
             ],
-            "matches":["https://*.juntadeandalucia.es/*"]
+            "matches":["https://*.juntadeandalucia.es/*","file://*"]
         }
       ]      
       ,
-      "host_permissions": ["https://*.juntadeandalucia.es/*"]
+      "host_permissions": ["https://*.juntadeandalucia.es/*","file://*"]
   }

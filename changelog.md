@@ -1,4 +1,10 @@
 # Historial de cambios
+## Versión 1.0.3
+
+- Corregido problema cuando no aparece los CRs y se inyecta el calculo de CR provisional.
+- Mejorado algunos aspectos a la hora de guardar o rescatar.
+- Agregado cálculo ponderado de CEs e interfaz para asociar la ponderación de CEs a cada tarea.
+- Mejoras generales en la interfaz.
 
 ## Versión 1.0.2
 - Se ha añadido _locale/es/messajes.json para ir adaptando los mensajes 

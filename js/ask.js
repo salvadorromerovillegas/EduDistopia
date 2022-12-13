@@ -1,8 +1,9 @@
-let setStyleButton = document.getElementById("setStyle");
-let procesar1Button = document.getElementById("procesar1");
-let procesar2Button = document.getElementById("procesar2");
-let generarFeedback= document.getElementById("generarFeedback");
-let promCEs = document.getElementById("promCEs");
+const setStyleButton = document.getElementById("setStyle");
+const procesar1Button = document.getElementById("procesar1");
+const procesar2Button = document.getElementById("procesar2");
+const generarFeedback= document.getElementById("generarFeedback");
+const promCEs = document.getElementById("promCEs");
+const confPondCE = document.getElementById("confPondCE");
 
 // Cuando se pulsa el botón "setStyle" (Mejorar presentación rúbrica), simplemente se inyecta CSS
 setStyleButton.addEventListener("click", async () => {
@@ -95,4 +96,19 @@ generarFeedback.addEventListener("click", async () => {
 
 });
 
-
+confPondCE.addEventListener("click", async () => {
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true, status: "complete" });
+  window.close();
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      const src = chrome.runtime.getURL('/js/modules/cepond.js');
+      import(src).then((m) => {         
+        m.openPondCEUI();
+      });    
+      
+      }
+    }
+  );
+}
+);
