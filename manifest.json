@@ -1,7 +1,7 @@
 {
     "name": "EduDistopía",    
     "description": "FP a Distancia Andalucía Extensión Navegador para Docentes",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "author": "Salvador Romero Villegas",
     "manifest_version": 3,
     "default_locale": "es",
@@ -12,7 +12,7 @@
     "permissions": ["storage","activeTab","scripting","tabs", "clipboardWrite"],
     "action": {
         "default_title": "Haz clic aquí para ver el cajón de utilidades",
-        "default_popup": "/popups/ask.html",
+        "default_popup": "/popups/cajonutilidades.html",
         "default_icon": {
             "16": "/images/get_started16.png",
             "32": "/images/get_started32.png",
@@ -35,15 +35,14 @@
                 "/js/jquery-ui/jquery-ui.min.css",
                 "/js/jquery-ui/jquery-ui.min.js",                
                 "/js/jquery-ui/images/*.png",
-                "/js/injectable.js",                
-                "/js/promedioCEs.js",
-                "/js/calcularCEsMod.js",
-                "/js/generarFeedbackMod.js",
+                "/js/injectableUtilidadesNotas.js",                
+                "/js/injectableGuardarFormularios.js",                
+                "/js/injectableMejorasCorreo.js", 
                 "/js/modules/*"
             ],
-            "matches":["https://*.juntadeandalucia.es/*","file://*"]
+            "matches":["https://*.juntadeandalucia.es/*","file://*","http://localhost:*/*"]
         }
       ]      
       ,
-      "host_permissions": ["https://*.juntadeandalucia.es/*","file://*"]
+      "host_permissions": ["https://*.juntadeandalucia.es/*","file://*","http://localhost:*/*"]
   }

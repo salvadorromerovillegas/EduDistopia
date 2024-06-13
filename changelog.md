@@ -1,4 +1,26 @@
 # Historial de cambios
+
+## Futuras versiones
+
+ - TODO: Inyectar un botón para invocar copiarNotaTareaActualACriteriosEvaluacion.
+ - TODO: actualizar el estilo del cajón de utilidades.
+ - TODO: crear generador de botones
+ - TODO: convertir a botones tipo "<A>" para evitar invocar autosave-ajax.php 1->1, 1->N, CR->CE, Calcular y Insertar Feedback.
+ - TODO: añadir dialog de ayuda a "1->1", "1->N" y "CR->CE"
+ - TODO: los estilos de botón tipo "<A>" centralizarlos en hojas de estilo base.
+ 
+
+## Versión 1.0.4
+
+- Se añade utilidad para marcar participantes (se modifica cajonutilidades y se añade j/s/modules/marcarParticipantes.js).
+- Se ha movido promedioCEs.js y generarFeedbackMod.js a modules, se han documentado y se han renombrado (promedioCEs.js --> popupInfoNotaCECR.js)
+- Se renombro "ask.\*" por "cajonutilidades.\*" (popup con opciones que está desfasado)
+- Se separa injectable.js en dos: injectableUtilidadesNotas.js y injectableGuardarFormularios.js. 
+- Se cambia el nombre de correomejoras.js a injectableMejorasCorreo.js.
+- Añadido /js/modules/ayudacorregirrapido.js con funciones para facilitar la corrección ( marcar como correcto o no realizado el item de rúbrica). Añadir la función de marcar "criterio de rúbrica" como correcto y que añade el texto "Correcto." al cuadro de retroalimentación.
+- Se evita recarga de jquery-ui.css.
+- Se añaden facilidades para edición de correo.
+
 ## Versión 1.0.3
 
 - Corregido problema cuando no aparece los CRs y se inyecta el calculo de CR provisional.

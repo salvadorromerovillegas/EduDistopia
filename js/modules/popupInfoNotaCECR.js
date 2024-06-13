@@ -1,6 +1,10 @@
 import { calcCEMark, collectCRs } from '/js/modules/ext.js';
 
-export function calcularNotasCEyCR () {
+/**
+ * Calcula las notas basadas en CE y CR, y las muestra en un alert.
+ * Esta función se usa desde el popup (ask.js)
+ */
+export function mostrarNotasSegunRubricaYCriterios () {
 
     let msg = [];
 

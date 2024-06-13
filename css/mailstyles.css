@@ -1,0 +1,26 @@
+
+@media only screen and (min-width: 750px) {
+
+    section#region-main .mail_reply{
+        padding-top: 150px;
+        float: right;
+        width: 55%;
+        padding-left:20px;
+    }
+    
+    section#region-main form {
+        float: left;
+        width: 45%;
+    }
+    
+    div#topofscroll:before {
+        text-align:center;
+        content: "EduDistopia";
+        position:absolute;
+        margin: -5px 0 0 -43px;
+        width: 100px;
+        height: 20px;
+        transform:rotate(-45deg);
+        background-color:#d0d0d0;
+  }
+}

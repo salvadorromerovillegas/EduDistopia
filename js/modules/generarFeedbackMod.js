@@ -30,7 +30,7 @@ export function renderFeedback () {
             }
         }
 
-        let html = `<div id="${id}"><div id='notamod_${id}'></div><BR><TABLE border="1">`;
+        let html = `<div id="${id}"><div id='notamod_${id}'></div><BR><TABLE border=1>`;
         for (let i of CRs) {
             let feedback=toHTMLEntities(i.feedback);
             html = html + `

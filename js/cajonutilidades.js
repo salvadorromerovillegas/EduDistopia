@@ -4,7 +4,7 @@ const procesar2Button = document.getElementById("procesar2");
 const generarFeedback= document.getElementById("generarFeedback");
 const promCEs = document.getElementById("promCEs");
 const confPondCE = document.getElementById("confPondCE");
-
+const marcarUsuarios = document.getElementById("marcarUsuarios");
 // Cuando se pulsa el botón "setStyle" (Mejorar presentación rúbrica), simplemente se inyecta CSS
 setStyleButton.addEventListener("click", async () => {
 
@@ -24,10 +24,9 @@ promCEs.addEventListener("click", async () => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      const src = chrome.runtime.getURL('/js/promedioCEs.js');
+      const src = chrome.runtime.getURL('/js/modules/popupInfoNotaCECR.js');
       import(src).then((m) => { 
-        console.log("Script promedioCEs.js cargado.");      
-        m.calcularNotasCEyCR();
+        m.mostrarNotasSegunRubricaYCriterios();
       });    
       
       }
@@ -45,10 +44,9 @@ procesar1Button.addEventListener("click", async () => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      const src = chrome.runtime.getURL('/js/calcularCEsMod.js');
-      import(src).then((m) => { 
-        console.log("Script calcularCEsMod.js cargado. Copiando...");      
-        m.procesarCEsCopyNote();
+      const src = chrome.runtime.getURL('/js/modules/calcularCEsMod.js');
+      import(src).then((m) => {         
+        m.copiarNotaTareaActualACriteriosEvaluacion();
       });    
       
       }
@@ -65,9 +63,8 @@ procesar2Button.addEventListener("click", async () => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      const src = chrome.runtime.getURL('/js/calcularCEsMod.js');
+      const src = chrome.runtime.getURL('/js/modules/calcularCEsMod.js');
       import(src).then((m) => { 
-        console.log("Script calcularCEsMod.js cargado.");      
         m.procesarCEsNotaDistribuida();
       });    
       
@@ -84,9 +81,8 @@ generarFeedback.addEventListener("click", async () => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      const src = chrome.runtime.getURL('/js/generarFeedbackMod.js');
-      import(src).then((m) => { 
-        console.log("Script generarFeedbackMod.js cargado.");      
+      const src = chrome.runtime.getURL('/js/modules/generarFeedbackMod.js');
+      import(src).then((m) => {         
         m.renderFeedback();
       });    
       
@@ -105,6 +101,24 @@ confPondCE.addEventListener("click", async () => {
       const src = chrome.runtime.getURL('/js/modules/cepond.js');
       import(src).then((m) => {         
         m.openPondCEUI();
+      });    
+      
+      }
+    }
+  );
+}
+);
+
+
+marcarUsuarios.addEventListener("click", async () => {
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true, status: "complete" });
+  window.close();
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      const src = chrome.runtime.getURL('/js/modules/marcarParticipantes.js');
+      import(src).then((m) => {         
+        m.openPondSFLMarcar();
       });    
       
       }

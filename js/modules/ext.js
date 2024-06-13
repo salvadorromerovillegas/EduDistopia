@@ -39,10 +39,10 @@ function extractorCEdeCadena(text)
      *   - criteriaList[i].CEs: array con todos los CEs del criterio (si siguen el formato esperado)
      *   - criteriaList[i].logro: texto del nivel de logro conseguido
      *   - criteriaList[i].porcentaje: porcentaje de peso de este CR en el global de CRs (puntuación máxima del CR / suma máximos CR )
-     *   - criteriaList[i].score: Puntuación obtenida en este CR sobre scoreMax
-     *   - criteriaList[i].scoreMax: Puntuación máxima de este CR
-     *   - criteriaList[i].score10: Puntuación de este CR sobre 10 (siendo 10 scoreMax)
-     *   - criteriaList[i].scoreGlobalPart: Aportación a la nota global de este CR (si se suman todos se obtiene la nota final de la tarea sobre 10)
+     *   - criteriaList[i].scoreMax: Puntuación máxima de este CR (ese decir, puntuación del máximo nivel de este CR)     
+     *   - criteriaList[i].score: Puntuación el nivel marcado en este CR sobre scoreMax      
+     *   - criteriaList[i].score10: Puntuación de marcada en el CR sobre 10 (es decir, considerando que scoreMax es 10)
+     *   - criteriaList[i].scoreGlobalPart: Aportación de este CR a la nota según rúbrica de Moodle (si se suman los de todos los CRs se obtiene la nota final de la tarea sobre 10)
      *   - criteriaList[i].feedback: Texto de retroalimentación
      * 
      * Además, el objeto retornado tiene un atributo común:
@@ -279,10 +279,25 @@ function extractorCEdeCadena(text)
       }
   
   /**
-   * Realiza el cálculo de la nota de cada CE en base a los CR que 
-   * tiene mapeados.
-   * Nota: antes de invocar este método hay que hacer el mapeado con mapCRsToCEs.
+   * Realiza el cálculo de la nota de cada CE en base a los CR que tiene mapeados.
    * Modifica el mapa CEs añadiendo el atributo "grade" con la nota de ese criterio de evaluación.
+   * 
+   *          NotaCR1*PerctCR1+NotaCR2*PerctCR2+...+NotaCRn*PerctCRn
+   * notaCE = ------------------------------------------------------
+   *                     PerctCR1+PerctCR2+...+PerctCRn
+   * 
+   * Donde PerctCRn son los porcentajes de peso de cada CR, dado que cada CR 
+   * tiene una nota diferente en la rúbrica.
+   * 
+   * Se espera en el mapa de CEs recibido aquí:
+   * 
+   * --> ce.cr[...] = lista de CRs asociados a un CE
+   * --> ce.cr[...].score10 = nota del CR sobre 10 (no sobre la puntuación maxima asignada). Sería NotaCR1.
+   * --> ce.cr[...].porcentaje = % de este CR sobre todos los CRs en función de su puntuación y la suma de la 
+   * puntuación máxima de todos los CRs. Equivale a PerctCRn.
+   * 
+   * Nota: antes de invocar este método hay que hacer el mapeado con mapCRsToCEs.
+   * 
    * @param {*} CEs 
    * @returns false si no se pudo hacer el cálculo de la nota de cada CE
    * o la nota media de todos los CEs si se pudo realizar el cálculo.
@@ -294,7 +309,7 @@ function extractorCEdeCadena(text)
       for (const [cedef, ce] of CEs) { //CEs es un mapa (cedef key y ce valor)
         let g = 0; 
         let p = 0;
-        for (let cr of ce.cr) {
+        for (let cr of ce.cr) { //Recorremos los CRs asociado a cada CE
           g += cr.score10 * cr.porcentaje;
           p += cr.porcentaje;
         }

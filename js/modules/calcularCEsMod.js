@@ -1,7 +1,13 @@
-import {collectCRs, collectCEs, mapCRsToCEs, checkAllCEsHaveCRsMapped,gradeCEs,asignarNotasCEs,obtenerNotaAsignadaActual,copyGradeToAllCEs} from '/js/modules/ext.js';
+import {collectCRs, collectCEs, mapCRsToCEs, checkAllCEsHaveCRsMapped,gradeCEs,
+        asignarNotasCEs,obtenerNotaAsignadaActual,copyGradeToAllCEs} from '/js/modules/ext.js';
 
+/**
+ * Función que marca en cada CE la nota en base a los CR en los que participa,
+ * ponderando en base a la nota máxima de cada CR.
+ */
 export function procesarCEsNotaDistribuida ()
 {
+    //Recogemos los criterios de rúbrica y la información textual de ellos
     let CRs = collectCRs();
     
     if (CRs===-1)
@@ -16,6 +22,7 @@ export function procesarCEsNotaDistribuida ()
         return;
     }
 
+    //Recojemos los desplegables con los CEs
     let CEs = collectCEs();
 
     if (CEs.size==0) {
@@ -24,10 +31,15 @@ export function procesarCEsNotaDistribuida ()
     }
 
     let errors=[];
+    //Asociamos a cada CE aquellos CR que participa
     if (mapCRsToCEs(CRs, CEs, errors)) {
+      //Comprueba que todos los CEs tengan al menos un CR mapeado
       if (checkAllCEsHaveCRsMapped(CEs,errors)) {
+        /*Calcula la nota de cada CE en base al promedio de los CR en los que participa. */
         let nmCEs = gradeCEs(CEs,errors);
         if (nmCEs !== false) {
+            /* Una vez calculadas la notas de cada CE en base a los CR de los que participa,
+               modifica los desplegables de cada CE para poner la nota. */
             let ok=asignarNotasCEs(CEs,errors);
             if (ok) {
                 alert("Notas por CE procesadas.\n Nota media para CEs: " + nmCEs);        
@@ -49,7 +61,12 @@ export function procesarCEsNotaDistribuida ()
     }
 }
 
-export function procesarCEsCopyNote ()
+/**
+ * Simplemente copia la nota de la tarea a todos los CEs.
+ * La nota puede haber sido rellenada "a mano" si no se ha configurado Rúbrica.
+ * Si no hay nota actual de la tarea, entonces calcula la que obtendría en base a los CRs marcados.
+ */
+export function copiarNotaTareaActualACriteriosEvaluacion ()
 {
     //Otenemos la nota asignada a la tarea
     let nota=obtenerNotaAsignadaActual();

@@ -1,8 +1,15 @@
+table.criteria tr.criterion {
+    display:block;
+    width:100% !important;   
+}
+
 table.criteria tr.criterion td.remark {
     display:block;
     float: left;
     line-height: 22px;
-    width: 100%;
+    margin-left: 2.5%;
+    margin-right: 2.5%;
+    width: 95% !important;
   }
   
   table.criteria tr.criterion td.description {
